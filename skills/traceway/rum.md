@@ -5,13 +5,13 @@ Use this reference for browser measurement, release investigations, performance 
 
 ## Check capabilities before promising coverage
 
-- Browser projects are React, Vue, Svelte and jQuery, separate from backend and mobile projects. Browser SDK 1.x, 2.0 and 2.1 have different capabilities. Check the installed package/lockfile and session SDK version, the server version, and live npm dist-tags for both frontend and its wrapper before upgrading. Never assume `latest`, `beta`, or a local source checkout contains a feature.
-- SDK 2.0 supplies performance events; only uploaded events become metrics. SDK 2.1+ supplies independent device-aggregated metrics. If no published compatible version contains the required feature, report that release limitation; do not silently substitute source code or promise complete RUM from an older SDK.
+- Browser projects are React, Vue, Svelte and jQuery, separate from backend and mobile projects. Browser SDK 1.x and 2.x have different capabilities; npm `latest` is 2.x. Check the installed package/lockfile and session SDK version, the server version, and live npm dist-tags for both frontend and its wrapper before upgrading. Never assume a dist-tag or a local source checkout says what the app runs.
+- Stable SDK 2.0.0 and later supply independent device-aggregated metrics. SDK 1.x has no performance metrics. An early `2.0.0-beta.N` prerelease supplies only performance events, and only uploaded events become metrics. If the installed version lacks the required feature, report that limitation and the upgrade it needs (1.x to 2.x is a migration: https://docs.tracewayapp.com/client/js-sdk/migration); do not silently substitute source code or promise complete RUM from an older SDK.
 - The server accepts mobile `app.*` OTLP metrics, but the shipped mobile SDKs do not yet produce them. An available Mobile Performance template does not prove instrumentation exists.
 
 ## Measurement and diagnostic detail are separate
 
-SDK 2.1+ aggregates distributions as delta exponential histograms and counters as delta sums, sent to `/api/otel/v1/metrics` when the page hides, the session ends, or every 300 seconds. The server merges cells and flushes every 10 seconds by default. Healthy visits contribute without uploading diagnostic breadcrumbs or replay. SDK 2.0 event-derived metrics instead reflect the events actually sent; do not compare those samples as if they covered every visit.
+SDK 2.x (stable 2.0.0 and later) aggregates distributions as delta exponential histograms and counters as delta sums, sent to `/api/otel/v1/metrics` when the page hides, the session ends, or every 300 seconds. The server merges cells and flushes every 10 seconds by default. Healthy visits contribute without uploading diagnostic breadcrumbs or replay. Event-derived metrics from a `2.0.0-beta.N` prerelease instead reflect the events actually sent; do not compare those samples as if they covered every visit.
 
 Detailed console lines, navigation, clicks, requests and replay normally buffer locally. The breadcrumb ring holds 10 minutes or 2 MiB, replay up to 8 MiB. Breadcrumb persistence across page loads is best effort; replay stays in memory. An error uploads preceding breadcrumbs and a 30-second clip (5-second cooldown, 20 clips/session). Recording triggers and targeted captures provide additional evidence. Streamed or captured diagnostics are selected samples, not request-volume denominators.
 
@@ -77,7 +77,7 @@ The current server accepts p50/p75/p90/p95/p99 and `good_ratio` on distributions
 
 Replace the example dates with the requested range. Use `tagFilters` for environment/population. For trends omit `wholeRange` and optionally set `intervalMinutes`. Inspect errors and truncation. `good_ratio` query results are fractions (0..1); alert rule thresholds are percentages (0..100). Percentiles require distributions; point metrics cannot yield them.
 
-Current CLI/MCP dashboard import validation still rejects percentile/good-ratio sources and `rating_bar`/`breakdown_table`, although the dashboard supports them. Use the dashboard editor/JSON UI for these, preserving existing widget IDs; do not strip unsupported widgets from an export to force an import. SLO authoring and exemplars also use the dashboard. Existing supported alert and OpAMP writes use `traceway-write` with its normal permission checks.
+Current CLI/MCP dashboard import validation still rejects percentile/good-ratio sources and `rating_bar`/`breakdown_table`, although the dashboard supports them. Use the dashboard editor/JSON UI for these, preserving existing widget IDs; do not strip unsupported widgets from an export to force an import. Exemplars also use the dashboard. Read SLOs with `traceway slos list` / `slos show <id>` (`list_slos`, `get_slo`) and try a definition with `slos preview`; creating, changing and deleting them needs `traceway-write slos` (`create_slo`, `update_slo`, `delete_slo`) with its normal permission checks, like alert and OpAMP writes. A distribution SLO is `sliKind: metric` with `aggregation: distribution`.
 
 ## Verify delivery and operate it
 
